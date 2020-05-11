@@ -1,3 +1,6 @@
+#19M38159
+Thomas Spendlhofer
+
 # hpc_lecture
 
 |          | Topic                                | Sample code               |
