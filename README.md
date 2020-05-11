@@ -1,7 +1,7 @@
-#19M38159
-Thomas Spendlhofer
+# 19M38159
+# Thomas Spendlhofer
 
-# hpc_lecture
+Included homeworks:
 
 |          | Topic                                | Sample code               |
 | -------- | ------------------------------------ | ------------------------- |
