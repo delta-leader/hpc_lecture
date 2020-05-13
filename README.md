@@ -1,5 +1,4 @@
-# 19M38159
-# Thomas Spendlhofer
+# 19M38159 - Thomas Spendlhofer
 
 Included homeworks:
 
@@ -9,6 +8,9 @@ Included homeworks:
 
 
 Not yet done:
+
+| Topic                                | Sample code               |
+| ------------------------------------ | ------------------------- |
 | Distributed memory parallelization   | 03_mpi                    |
 | SIMD parallelization                 | 04_simd                   |
 | GPU programming                      | 05_cuda,05_openacc        |
