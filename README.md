@@ -22,4 +22,4 @@ Not yet done:
 | Parallel profiler                    | 11_profiler               |
 | Containers                           |                           |
 | Scientific computing                 | 13_fdm,13_solver          |
-| Deep Learning                        | 14_dl                     |
+| Class 14 | Deep Learning                        | 14_dl                     |
