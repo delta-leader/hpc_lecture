@@ -15,6 +15,7 @@ int main() {
   // load the result vectors
   __m256 fxvec = _mm256_load_ps(fx);
   __m256 fyvec = _mm256_load_ps(fy);
+
   for(int i=0; i<N; i++) {
     // load data
     __m256 xvec = _mm256_load_ps(x);
@@ -32,10 +33,12 @@ int main() {
     __m256 rxvec = _mm256_sub_ps(xvec, xsubvec);
     __m256 ryvec = _mm256_sub_ps(yvec, ysubvec);
     
+    // computation
     __m256 rvec = _mm256_add_ps(_mm256_mul_ps(rxvec, rxvec), _mm256_mul_ps(ryvec, ryvec));
-    rvec = _mm256_sqrt_ps(rvec);
-    rvec = _mm256_div_ps(_mm256_set1_ps(1), rvec);
-    //rvec = _mm256_rsqrt_ps(rvec);
+    // just to obsere behaviour of sqrt
+    //rvec = _mm256_sqrt_ps(rvec);
+    //rvec = _mm256_div_ps(_mm256_set1_ps(1), rvec);
+    rvec = _mm256_rsqrt_ps(rvec);
     __m256 rmulvec = _mm256_mul_ps(rvec, _mm256_mul_ps(rvec, rvec));
     
    // load m

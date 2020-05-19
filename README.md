@@ -6,13 +6,13 @@ Included homeworks:
 | ------------------------------------ | ------------------------- |
 | Shared memory parallelization        | 02_openmp                 |
 | Distributed memory parallelization   | 03_mpi                    |
+| SIMD parallelization                 | 04_simd                   |
 
 
 Not yet done:
 
 | Topic                                | Sample code               |
 | ------------------------------------ | ------------------------- |
-| SIMD parallelization                 | 04_simd                   |
 | GPU programming                      | 05_cuda,05_openacc        |
 | Parallel programing models           | 06_starpu                 |
 | Cache blocking                       | 07_cache_cpu,07_cache_gpu |
