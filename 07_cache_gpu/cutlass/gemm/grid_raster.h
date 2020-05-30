@@ -119,7 +119,6 @@ struct grid_raster
 };
 
 
-
 /******************************************************************************
  * grid_raster (ColumnMajor specialization)
  ******************************************************************************/
@@ -140,7 +139,7 @@ struct grid_raster<
     BlockItemsX,
     TransformA,
     TransformB,
-    grid_raster_strategy::ColumnMajor>                   ///< Strategy for enumerating \p block_task within an input matrix
+    grid_raster_strategy::Default>                   ///< Strategy for enumerating \p block_task within an input matrix
 {
     //-------------------------------------------------------------------------
     // Device API
@@ -181,38 +180,6 @@ struct grid_raster<
             (n + BlockItemsX - 1) / BlockItemsX);
     }
 };
-
-
-
-/******************************************************************************
- * grid_raster (Default specializations)
- ******************************************************************************/
-
-/**
- * \brief Abstraction for enumerating \p block_task within an input matrix
- * (Default N* specialization)
- *
- * Maps thread blocksin column-major fashion
- */
-template <
-    int BlockItemsY,                        ///< Height in rows of a block-wide tile in matrix C
-    int BlockItemsX,                        ///< Width in columns of a block-wide tile in matrix C
-    matrix_transform_t::kind_t TransformB>  ///< View transform enumerant for matrix B
-struct grid_raster<
-    BlockItemsY,
-    BlockItemsX,
-    matrix_transform_t::NonTranspose,       ///< View transform enumerant for matrix A
-    TransformB,
-    grid_raster_strategy::Default>         ///< Strategy for enumerating \p block_task within an input matrix
-:
-    grid_raster<
-        BlockItemsY,
-        BlockItemsX,
-        matrix_transform_t::NonTranspose,
-        TransformB,
-        grid_raster_strategy::ColumnMajor>
-{};
-
 
 
 } // namespace gemm
