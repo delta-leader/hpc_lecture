@@ -68,23 +68,10 @@ namespace gemm {
  *   inputs a and b.
  *
  */
-template <
-    typename value_t,       ///< Component value type
-    typename accum_t>       ///< Accumulator value type
-struct dp_accummulate;
-
-
 
 /// Default "dp1" dot-product-accumulate traits specialization for value_t->accum_t
-template <
-    typename value_t,       ///< Component value type
-    typename accum_t>       ///< Accumulator value type
 struct dp_accummulate
 {
-    /// Single-component "dp1" dot-product vector type
-    typedef value_t dp_vector_t;
-
-
     /// Compute "dp1" float->float
     inline __device__
     static void mad(
