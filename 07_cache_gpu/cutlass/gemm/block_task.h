@@ -38,15 +38,12 @@
 
 #include "grid_raster.h"
 #include "block_loader.h"
-#include "k_split_control.h"
 #include "thread_accumulator.h"
 
 namespace cutlass {
 namespace gemm {
 
 template <
-    typename                    value_t,                ///< Multiplicand value type (matrices A and B)
-    typename                    accum_t,                ///< Accumulator value type (matrix C and scalars)
     int                         LdgAlignA,              ///< Alignment (in bytes) for A operand
     int                         LdgAlignB,              ///< Alignment (in bytes) for B operand
     typename                    epilogue_op_t,          ///< Epilogue operation applied to GEMM
@@ -74,21 +71,16 @@ struct block_task
     /// Accumulator type
     typedef thread_accumulator<
             ThreadItemsY,
-            ThreadItemsX,
-            value_t,
-            accum_t>
+            ThreadItemsX>
         thread_accumulator_t;
-
-    /// Dot-product vector type along the K-axis (e.g, uchar4 when using IDP4A)
-    typedef typename thread_accumulator_t::dp_vector_t dp_vector_t;
 
     enum
     {
         /// Whether this is a small, latency-bound tile
         IsSmallTile = (ThreadItemsY < 4) && (ThreadItemsX < 4),
 
-        /// Number of value_t in dp_vector_t
-        DpVectorItems = divide_assert<sizeof(dp_vector_t), sizeof(value_t)>::value,
+        /// Number of value_t in float
+        DpVectorItems = divide_assert<sizeof(float), sizeof(float)>::value,
 
         /// Extent of block-wide C-tile in accum_t (and A-tiles in value_t) along M-axis (height)
         BlockItemsY = 64,
@@ -102,18 +94,18 @@ struct block_task
         /// Whether to halve synchronization overhead at the expense of doubled shared memory and addressing overhead
         UseDoubleScratchTiles = false,
 
-        /// Extent of block-wide A|B tiles in dp_vector_t along the K-axis
+        /// Extent of block-wide A|B tiles in float along the K-axis
         BlockDpVectorsK = divide_assert<BlockItemsK, DpVectorItems>::value,
 
-        /// Number of dp_vector_t along M-axis that can be read in a single LDS from the shared A-tile (up to 128b if more than one value_t)
+        /// Number of float along M-axis that can be read in a single LDS from the shared A-tile (up to 128b if more than one value_t)
         LdsVectorDpVectorsA = __NV_STD_MIN(
             ThreadItemsY,
-            __NV_STD_MAX(1, (128 / (__NV_STD_MAX(sizeof(dp_vector_t), sizeof(accum_t)) * 8)))),
+            __NV_STD_MAX(1, (128 / (__NV_STD_MAX(sizeof(float), sizeof(float)) * 8)))),
 
-        /// Number of dp_vector_t along N-axis that can be read in a single LDS from the shared B-tile (up to 128b if more than one value_t)
+        /// Number of float along N-axis that can be read in a single LDS from the shared B-tile (up to 128b if more than one value_t)
         LdsVectorDpVectorsB = __NV_STD_MIN(
             ThreadItemsX,
-            __NV_STD_MAX(1, (128 / (__NV_STD_MAX(sizeof(dp_vector_t), sizeof(accum_t)) * 8)))),
+            __NV_STD_MAX(1, (128 / (__NV_STD_MAX(sizeof(float), sizeof(float)) * 8)))),
 
         /// Number of strip-mined LDS vector reads from shared A-tile
         ThreadLdsVectorsA = divide_assert<ThreadItemsY, LdsVectorDpVectorsA>::value,
@@ -122,7 +114,7 @@ struct block_task
         ThreadLdsVectorsB = divide_assert<ThreadItemsX, LdsVectorDpVectorsB>::value,
 
         /// Number of elements in one LDG/STG vector of C-tile
-        ThreadLdgVectorSizeC = __NV_STD_MIN(LdgAlignC, 16) / (sizeof(accum_t)),
+        ThreadLdgVectorSizeC = __NV_STD_MIN(LdgAlignC, 16) / (sizeof(float)),
 
         /// Number of threads in warp
         WarpThreads = 32,
@@ -147,10 +139,10 @@ struct block_task
     };
 
     /// Load-from-shared data movement type for A-tile, coarsened by LdsVectorDpVectorsA
-    typedef io_vector<dp_vector_t, LdsVectorDpVectorsA> lds_vector_a_t;
+    typedef io_vector<float, LdsVectorDpVectorsA> lds_vector_a_t;
 
     /// Load-from-shared data movement type for B-tile, coarsened by LdsVectorDpVectorsB
-    typedef io_vector<dp_vector_t, LdsVectorDpVectorsB> lds_vector_b_t;
+    typedef io_vector<float, LdsVectorDpVectorsB> lds_vector_b_t;
 
     /// Thread block rasterization helper type
     typedef grid_raster<
@@ -167,10 +159,7 @@ struct block_task
       64,                                       // BlockThreads
       8,                                    // BlockDpVectorsK
       64,                                        // BlockItemsL
-      float,                                            // value_t
       16,                                          // MatrixAlignBytes
-      false,                                   // AllowRaggedTiles
-      dp_vector_t,                                        // dp_vector_t
       load_algorithm::CongruousCopy>
     block_loader_a_t;
 
@@ -180,10 +169,7 @@ struct block_task
       64,                                       // BlockThreads
       8,                                    // BlockDpVectorsK
       64,                                        // BlockItemsL
-      float,                                            // value_t
       16,                                          // MatrixAlignBytes
-      false,                                   // AllowRaggedTiles
-      dp_vector_t,                                        // dp_vector_t
       load_algorithm::CrosswiseCopy>
     block_loader_b_t;
 
@@ -199,10 +185,10 @@ struct block_task
     struct page_storage_t
     {
         /// Tile of A
-        dp_vector_t __align__(16) block_a[BlockDpVectorsK][BlockItemsY + PadItemsA];
+        float __align__(16) block_a[BlockDpVectorsK][BlockItemsY + PadItemsA];
 
         /// Tile of B
-        dp_vector_t __align__(16) block_b[BlockDpVectorsK][BlockItemsX + PadItemsB];
+        float __align__(16) block_b[BlockDpVectorsK][BlockItemsX + PadItemsB];
     };
 
 
@@ -237,7 +223,7 @@ struct block_task
     int page_idx;
 
     /// Pointer to matrix C
-    accum_t *d_c;
+    float *d_c;
 
     /// Epilogue operation applied to update matrix C
     epilogue_op_t epilogue_op;
@@ -247,9 +233,6 @@ struct block_task
 
     /// Matrix width in columns of trans_op(B) and C
     int dim_n;
-
-    /// Control for inter-block k-splitting
-    k_split_control k_split;
 
     /// Thread block's base value_t coordinates (m, n) in matrix C
     grid_raster_t grid_raster;
@@ -324,14 +307,13 @@ struct block_task
     inline __device__
     block_task(
         scratch_storage_t *scratch,
-        value_t *d_a,
-        value_t *d_b,
-        accum_t *d_c,
+        float *d_a,
+        float *d_b,
+        float *d_c,
         epilogue_op_t epilogue_op,
         int dim_m,
         int dim_n,
-        int dim_k,
-        k_split_control k_split)
+        int dim_k)
     :
         scratch(scratch),
         page_idx(0),
@@ -339,9 +321,8 @@ struct block_task
         epilogue_op(epilogue_op),
         dim_m(dim_m),
         dim_n(dim_n),
-        k_split(k_split),
-        block_item_coords_k(k_split.block_begin_item_k()),
-        block_end_item_k(k_split.block_end_item_k(dim_k)),
+        block_item_coords_k(0),
+        block_end_item_k(dim_k),
         block_warp_coords(warp_coords()),
         warp_thread_coords(thread_coords()),
         thread_strip_offset_a((warp_thread_coords.y * LdsVectorDpVectorsA) + (block_warp_coords.y * WarpItemsY)),
@@ -411,18 +392,6 @@ struct block_task
     __forceinline__ __device__
     void epilogue()
     {
-        // Wait for predecessor thread block(s) to produce block-wide tile of
-        // exclsuive partial-sums
-        k_split.wait();
-
-        // Configure epilogue as to whether the thread block is a secondary
-        // accumulator in an inter-block k-splitting scheme
-        if (k_split.is_secondary_accumulator())
-            epilogue_op.set_secondary_accumulator();
-
-        // Whether the addend from C needs loading
-        bool must_init_addend = epilogue_op.must_init_addend();
-
         #pragma unroll
         for (int x = 0; x < ThreadItemsX; ++x)
         {
@@ -438,33 +407,24 @@ struct block_task
                 int c_idx = (grid_raster.block_item_coords.x + thread_item_coords_tile_x) * dim_m +
                     grid_raster.block_item_coords.y + thread_item_coords_tile_y;
 
-                accum_t *my_c = d_c + c_idx;
+                float *my_c = d_c + c_idx;
 
                 #pragma unroll
                 for (int i = 0; i < LdsVectorDpVectorsA; ++i)
                 {
-                    accum_t c_slice = accum_t(0);
-                    accum_t *c_ptr = my_c + i;
+                    float c_slice = float(0);
+                    float *c_ptr = my_c + i;
 
                     if ((grid_raster.block_item_coords.x + thread_item_coords_tile_x) < dim_n &&
                         (grid_raster.block_item_coords.y + thread_item_coords_tile_y + i) < dim_m)
                     {
-                        if (must_init_addend)
-                        {
-                            ldg_cg(c_slice, c_ptr);
-                        }
-
-                        c_slice = epilogue_op(accumulator.get(x, y + i), c_slice, c_idx + i);
+                        c_slice = accumulator.get(x, y + i);
 
                         stg_cg(c_ptr, c_slice);
                     }
                 }
             }
         }
-
-        // Signal k-split successor thread_block that we have produced our block-wide
-        // tile of inclusive partial-sums
-        k_split.signal();
     }
 
 
@@ -518,9 +478,9 @@ struct block_task
               loader_a.next();
             }
 
-            // Cast strip-mined loads to contiguous array of dp_vector_t
-            typedef dp_vector_t thread_tile_a_t[ThreadLdsVectorsA * LdsVectorDpVectorsA];
-            typedef dp_vector_t thread_tile_b_t[ThreadLdsVectorsB * LdsVectorDpVectorsB];
+            // Cast strip-mined loads to contiguous array of float
+            typedef float thread_tile_a_t[ThreadLdsVectorsA * LdsVectorDpVectorsA];
+            typedef float thread_tile_b_t[ThreadLdsVectorsB * LdsVectorDpVectorsB];
             thread_tile_a_t &thread_tile_a = reinterpret_cast<thread_tile_a_t&>(local_slices_a[(tile_offset_k) % 2]);
             thread_tile_b_t &thread_tile_b = reinterpret_cast<thread_tile_b_t&>(local_slices_b[(tile_offset_k) % 2]);
 
@@ -541,10 +501,11 @@ struct block_task
     void run()
     {
         // Quit if the thread block is fully out-of-bounds
-        if (grid_raster.is_block_oob(dim_m, dim_n))
+        //Can not happen in ColumnMajor
+	/*if (grid_raster.is_block_oob(dim_m, dim_n))
         {
             asm volatile("exit;");
-        }
+        }*/
 
         // Request global prefetch of first tile
         loader_a.request();
