@@ -77,17 +77,13 @@ template <
     int BlockThreads,           ///< Number of threads in each thread block (blockDim.x)
     int BlockDpVectorsK,        ///< Extent of block-wide tile in dp_vector_t along the K-axis (height)
     int BlockDpVectorsL,        ///< Extent of block-wide tile in dp_vector_t along the L-axis (width)
-    typename value_t,           ///< Input matrix value type
     int LeadingDimAlignBytes,   ///< Byte alignment of input matrix leading dimension
-    bool AllowRaggedTiles,      ///< Whether the input matrix's dimensions need not be an even-multiple of the block-wide tile dimensions
     typename dp_vector_t>       ///< Dot-product vector type along the K-axis
 struct block_loader<
     BlockThreads,
     BlockDpVectorsK,
     BlockDpVectorsL,
-    value_t,
     LeadingDimAlignBytes,
-    AllowRaggedTiles,
     dp_vector_t,
     load_algorithm::CrosswiseCopy>  ///< Algorithm for loading a shared tile of KxL matrix data (CrosswiseCopy specialization)
 {
@@ -98,7 +94,7 @@ struct block_loader<
     enum
     {
         /// Number of value_t in a dp_vector_t
-        DpVectorItems = divide_assert<sizeof(dp_vector_t), sizeof(value_t)>::value,
+        DpVectorItems = divide_assert<sizeof(dp_vector_t), sizeof(float)>::value,
 
         /// Number of dp_vector_t in a block-wide tile
         BlockDpVectors = BlockDpVectorsK * BlockDpVectorsL,
@@ -214,7 +210,7 @@ struct block_loader<
     /// Constructor
     inline __device__
     block_loader(
-        value_t *d_matrix_items,        ///< Input pointer to matrix in value_t
+        float* d_matrix_items,        ///< Input pointer to matrix in value_t
         int matrix_items_l,             ///< Extent of the input matrix in value_t along the L-axis
         int matrix_items_stride_k,      ///< Distance in value_t within pitched-linear memory between successive coordinates along the K-axis
         int matrix_items_stride_l,      ///< Distance in value_t within pitched-linear memory between successive coordinates along the L-axis
