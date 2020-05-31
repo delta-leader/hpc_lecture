@@ -74,33 +74,24 @@ struct block_task
 
     enum
     {
-        /// Whether this is a small, latency-bound tile
-        IsSmallTile = (ThreadItemsY < 4) && (ThreadItemsX < 4),
-
-        /// Number of value_t in float
-        DpVectorItems = divide_assert<sizeof(float), sizeof(float)>::value,
-
         /// Extent of block-wide C-tile in accum_t (and A-tiles in value_t) along M-axis (height)
         BlockItemsY = 64,
 
         /// Extent of block-wide C-tile in accum_t (and B-tiles in value_t) along N-axis (width)
         BlockItemsX = 64,
 
-        /// Extent of block-wide A|B tiles in value_t along the K-axis
-        BlockItemsK = 8,
-
         /// Extent of block-wide A|B tiles in float along the K-axis
-        BlockDpVectorsK = divide_assert<BlockItemsK, DpVectorItems>::value,
+        BlockDpVectorsK = 8, 
 
         /// Number of float along M-axis that can be read in a single LDS from the shared A-tile (up to 128b if more than one value_t)
         LdsVectorDpVectorsA = __NV_STD_MIN(
             ThreadItemsY,
-            __NV_STD_MAX(1, (128 / (__NV_STD_MAX(sizeof(float), sizeof(float)) * 8)))),
+            __NV_STD_MAX(1, (128 / (sizeof(float) * 8)))),
 
         /// Number of float along N-axis that can be read in a single LDS from the shared B-tile (up to 128b if more than one value_t)
         LdsVectorDpVectorsB = __NV_STD_MIN(
             ThreadItemsX,
-            __NV_STD_MAX(1, (128 / (__NV_STD_MAX(sizeof(float), sizeof(float)) * 8)))),
+            __NV_STD_MAX(1, (128 / (sizeof(float) * 8)))),
 
         /// Number of strip-mined LDS vector reads from shared A-tile
         ThreadLdsVectorsA = divide_assert<ThreadItemsY, LdsVectorDpVectorsA>::value,
@@ -142,10 +133,7 @@ struct block_task
     /// Thread block rasterization helper type
     typedef grid_raster<
       64,
-      64,
-      matrix_transform_t::NonTranspose,
-      matrix_transform_t::NonTranspose,
-      grid_raster_strategy::Default>
+      64>
     grid_raster_t;
 
 
@@ -487,10 +475,6 @@ struct block_task
     {
         // Quit if the thread block is fully out-of-bounds
         //Can not happen in ColumnMajor
-	/*if (grid_raster.is_block_oob(dim_m, dim_n))
-        {
-            asm volatile("exit;");
-        }*/
 
         // Request global prefetch of first tile
         loader_a.request();
@@ -503,7 +487,7 @@ struct block_task
         loader_b.commit(scratch->page.block_b);
 
         // Advance to next A,B tiles in K-axis
-        block_item_coords_k += BlockItemsK;
+        block_item_coords_k += BlockDpVectorsK;
 
         // Synchronize shared tiles and prepared accumulator
         __syncthreads();
@@ -528,7 +512,7 @@ struct block_task
             consume_tile<true>();
 
             // Advance to next A,B tiles in K-axis
-            block_item_coords_k += BlockItemsK;
+            block_item_coords_k += BlockDpVectorsK;
         }
 
         // Consume last tile

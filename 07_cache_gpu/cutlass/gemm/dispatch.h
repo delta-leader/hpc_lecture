@@ -112,16 +112,9 @@ launch_configuration dispatch(
                                                     ///  to check for errors.  Also causes launch configurations to be printed
                                                     ///  to the console if DEBUG is defined.  Default is \p false.
 {
-    // Thread block rasterization type
-  static const matrix_transform_t::kind_t TransformA = matrix_transform_t::NonTranspose;
-  static const matrix_transform_t::kind_t TransformB = matrix_transform_t::NonTranspose;
-  //epilogue_op_t epilogue(alpha, beta);
   typedef grid_raster<
     64,
-    64,
-    TransformA,
-    TransformB,
-    grid_raster_strategy::Default>
+    64>
     grid_raster_t;
   launch_configuration config;
   config.block = dim3(64);

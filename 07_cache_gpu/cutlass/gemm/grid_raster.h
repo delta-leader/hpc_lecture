@@ -42,43 +42,6 @@ namespace gemm {
 
 
 /******************************************************************************
- * grid_raster_strategy
- ******************************************************************************/
-
-/**
- * \brief Strategies for enumerating \p block_task within an input matrix
- */
-struct grid_raster_strategy
-{
-    /// \brief Enumerants
-    enum kind_t
-    {
-        /**
-         * Default \p block_task assignment (currently ColumnMajor for N*,
-         * RowMajor for TT, and TiledCohort for TN)
-         */
-        Default,
-
-        /**
-         * Column-major \p block_task assignment
-         */
-        ColumnMajor,
-
-        /**
-         * Row-major \p block_task assignment
-         */
-        RowMajor,
-
-        /**
-         * Two-level \p block_task assignment (both column-major)
-         */
-        TiledCohort,
-    };
-};
-
-
-
-/******************************************************************************
  * grid_raster
  ******************************************************************************/
 
@@ -87,13 +50,12 @@ struct grid_raster_strategy
  *
  * NB: This generic class is not directly constructible.  Algorithm-specific
  * template specializations will provide the API functionality prescribed here.
- */
+ *//*
 template <
     int                             BlockItemsY,    ///< Height in rows of a block-wide tile in matrix C
     int                             BlockItemsX,    ///< Width in columns of a block-wide tile in matrix C
     matrix_transform_t::kind_t      TransformA,     ///< View transform enumerant for matrix A
-    matrix_transform_t::kind_t      TransformB,     ///< View transform enumerant for matrix B
-    grid_raster_strategy::kind_t    RasterStrategy> ///< Strategy for enumerating \p block_task within an input matrix
+    matrix_transform_t::kind_t      TransformB>     ///< View transform enumerant for matrix B
 struct grid_raster
 {
     //-------------------------------------------------------------------------
@@ -106,10 +68,6 @@ struct grid_raster
     /// Constructor
     grid_raster();
 
-    /// Whether the thread block base coordinates are out-of-bounds for an m*n matrix C
-    bool is_block_oob(int m, int n);
-
-
     //-------------------------------------------------------------------------
     // Grid launch API
     //-------------------------------------------------------------------------
@@ -117,7 +75,7 @@ struct grid_raster
     /// Compute the kernel grid extents (in thread blocks) for consuming an m*n matrix C
     static dim3 grid_dims(int m, int n);
 };
-
+*/
 
 /******************************************************************************
  * grid_raster (ColumnMajor specialization)
@@ -131,15 +89,9 @@ struct grid_raster
  */
 template <
     int                         BlockItemsY,          ///< Height in rows of a block-wide tile in matrix C
-    int                         BlockItemsX,          ///< Width in columns of a block-wide tile in matrix C
-    matrix_transform_t::kind_t  TransformA,         ///< View transform enumerant for matrix A
-    matrix_transform_t::kind_t  TransformB>         ///< View transform enumerant for matrix B
-struct grid_raster<
-    BlockItemsY,
-    BlockItemsX,
-    TransformA,
-    TransformB,
-    grid_raster_strategy::Default>                   ///< Strategy for enumerating \p block_task within an input matrix
+    int                         BlockItemsX          ///< Width in columns of a block-wide tile in matrix C
+    >
+struct grid_raster
 {
     //-------------------------------------------------------------------------
     // Device API
@@ -156,14 +108,6 @@ struct grid_raster<
         block_item_coords = make_int2(
             BlockItemsX * blockIdx.y,
             BlockItemsY * blockIdx.x);
-    }
-
-    /// Whether the base \p block_item_coords are out-of-bounds for an m*n matrix C
-    inline __device__
-    bool is_block_oob(int m, int n)
-    {
-        // ColumnMajor never rasterizes fully out-of-bounds thread blocks
-        return false;
     }
 
     //-------------------------------------------------------------------------
