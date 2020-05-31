@@ -3,7 +3,6 @@
 #include "../util/util.h"
 #include "block_task.h"
 #include "grid_raster.h"
-#include "k_split_control.h"
 
 namespace cutlass {
 namespace gemm {
@@ -13,15 +12,12 @@ namespace gemm {
                        int m,                      ///< Height in rows of op(A) and C
                        int n,                      ///< Width in columns of op(B) and C
                        int k,                      ///< Width in columns of op(A) and height in rows of op(B)
-                       k_split_control k_split,    ///< Abstraction for controlling inter-block k-splitting
                        epilogue_op_t op,           ///< Epilogue operation to update matrix C
                        float *d_a,               ///< Pointer to matrix A array values
                        float *d_b,               ///< Pointer to matrix B array values
                        float *d_c)               ///< Pointer to matrix C array values
 {
   typedef block_task<
-    float,
-    float,
     16,
     16,
     epilogue_op_t,
@@ -40,8 +36,7 @@ namespace gemm {
         op,
         m,
         n,
-        k,
-        k_split).run();
+        k).run();
 }
 
 
@@ -59,9 +54,6 @@ struct launch_configuration
     /// cudaError_t resulting from grid launch
     cudaError_t result;
 
-    /// Extent of a thread block's partition along the GEMM K-axis
-    int split_k;
-
     /// Kernel grid extents in thread blocks
     dim3 grid;
 
@@ -75,7 +67,6 @@ struct launch_configuration
     /// Constructor
     launch_configuration():
         result(cudaSuccess),
-        split_k(0),
         grid(0, 0, 0),
         block(0, 0, 0) {
 
@@ -84,7 +75,6 @@ struct launch_configuration
     /// Conversion from cudaError_t
     launch_configuration(cudaError_t result):
         result(result),
-        split_k(1),
         grid(0, 0, 0),
         block(0, 0, 0) {
 
@@ -93,12 +83,10 @@ struct launch_configuration
     /// Launch configuration for Cutlass kernels
     launch_configuration(
         cudaError_t result,
-        int split_k,
         dim3 grid,
         dim3 block
     ):
         result(result),
-        split_k(split_k),
         grid(grid),
         block(block) {
 
@@ -145,22 +133,9 @@ launch_configuration dispatch(
   launch_configuration config;
   config.block = dim3(64);
   int dynamic_smem_bytes = 0;
-  int max_sm_occupancy = 8;
   config.grid = grid_raster_t::grid_dims(m, n);
   int sm_count;
   get_sm_count(sm_count);
-  int *d_flags;
-  cudaGetSymbolAddress((void**) &d_flags, d_flags_split_k);
-
-  k_split_control k_split(
-                          d_flags,
-                          sm_count,
-                          max_sm_occupancy,
-                          k,
-                          8,
-                          config.block,
-                          config.grid);
-  config.split_k = k_split.split_k;
   gemm::kernel<epilogue_op_t>
     <<< config.grid,
     config.block,
@@ -169,7 +144,6 @@ launch_configuration dispatch(
                m,
                n,
                k,
-               k_split,
                epilogue,
                d_a,
                d_b,

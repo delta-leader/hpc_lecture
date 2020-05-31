@@ -100,7 +100,7 @@ template <
     int BlockDpVectorsK,                    ///< Extent of block-wide tile in dp_vector_t along the K-axis (height)
     int BlockDpVectorsL,                    ///< Extent of block-wide tile in dp_vector_t along the L-axis (width)
     int LeadingDimAlignBytes,               ///< Byte alignment of input matrix leading dimension
-    typename dp_vector_t,                   ///< Dot-product vector type along the K-axis
+    //typename dp_vector_t,                   ///< Dot-product vector type along the K-axis
     load_algorithm::kind_t LoadAlgorithm>   ///< Algorithm for loading a shared tile of KxL matrix data
 struct block_loader
 {
@@ -142,7 +142,7 @@ struct block_loader
      */
     template <int _BlockDpVectorsL>
     void commit(
-        dp_vector_t (&scratch_tile)[BlockDpVectorsK][_BlockDpVectorsL]);
+        float (&scratch_tile)[BlockDpVectorsK][_BlockDpVectorsL]);
 
 };
 

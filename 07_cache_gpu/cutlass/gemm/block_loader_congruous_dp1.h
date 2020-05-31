@@ -81,7 +81,6 @@ struct block_loader<
     BlockDpVectorsK,
     BlockDpVectorsL,
     LeadingDimAlignBytes,
-    float,                        ///< Dot-product vector type along the K-axis (dp1 specialization)
     load_algorithm::CongruousCopy>  ///< Algorithm for loading a shared tile of KxL matrix data (CongruousCopy specialization)
 {
     //-------------------------------------------------------------------------

@@ -76,8 +76,6 @@ namespace gemm {
 template <
     int ThreadItemsY,                   ///< Height of thread tile in accum_t
     int ThreadItemsX,                   ///< Width of thread tile in accum_t
-    //typename value_t,                   ///< Multiplicand value type
-    //typename accum_t,                   ///< Accumulator value type
     int ACCUM_BYTES =                   ///< Size in bytes of accum_t
         sizeof(float),
     arch_family_t::kind_t ArchFamily =  ///< Architectural family enumerant
@@ -91,17 +89,13 @@ protected:
     //-------------------------------------------------------------------------
 
     /// Specialized dot-product traits type
-    typedef dp_accummulate<float, float> dp_accum_traits_t;
-
+    typedef dp_accummulate dp_accum_traits_t;
 
 public:
 
     //-------------------------------------------------------------------------
     // Member types
     //-------------------------------------------------------------------------
-
-    /// Dot-product vector type
-    typedef typename dp_accum_traits_t::dp_vector_t dp_vector_t;
 
     /// Scratch storage layout
     struct scratch_storage_t {};
@@ -126,8 +120,8 @@ protected:
      */
     inline __device__
     void mad_xy(
-        dp_vector_t (&tile_a)[ThreadItemsY],
-        dp_vector_t (&tile_b)[ThreadItemsX],
+        float (&tile_a)[ThreadItemsY],
+        float (&tile_b)[ThreadItemsX],
         int x,
         int y)
     {
@@ -193,8 +187,8 @@ public:
      */
     inline __device__
     void multiply_accumulate(
-        dp_vector_t (&tile_a)[ThreadItemsY],
-        dp_vector_t (&tile_b)[ThreadItemsX])
+        float (&tile_a)[ThreadItemsY],
+        float (&tile_b)[ThreadItemsX])
     {
         // Simply traverse the accumulator tile in row-major order
         #pragma unroll

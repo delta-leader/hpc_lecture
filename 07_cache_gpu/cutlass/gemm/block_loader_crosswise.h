@@ -77,14 +77,12 @@ template <
     int BlockThreads,           ///< Number of threads in each thread block (blockDim.x)
     int BlockDpVectorsK,        ///< Extent of block-wide tile in dp_vector_t along the K-axis (height)
     int BlockDpVectorsL,        ///< Extent of block-wide tile in dp_vector_t along the L-axis (width)
-    int LeadingDimAlignBytes,   ///< Byte alignment of input matrix leading dimension
-    typename dp_vector_t>       ///< Dot-product vector type along the K-axis
+    int LeadingDimAlignBytes>   ///< Byte alignment of input matrix leading dimension
 struct block_loader<
     BlockThreads,
     BlockDpVectorsK,
     BlockDpVectorsL,
     LeadingDimAlignBytes,
-    dp_vector_t,
     load_algorithm::CrosswiseCopy>  ///< Algorithm for loading a shared tile of KxL matrix data (CrosswiseCopy specialization)
 {
     //-------------------------------------------------------------------------
@@ -94,7 +92,7 @@ struct block_loader<
     enum
     {
         /// Number of value_t in a dp_vector_t
-        DpVectorItems = divide_assert<sizeof(dp_vector_t), sizeof(float)>::value,
+        DpVectorItems = divide_assert<sizeof(float), sizeof(float)>::value,
 
         /// Number of dp_vector_t in a block-wide tile
         BlockDpVectors = BlockDpVectorsK * BlockDpVectorsL,
@@ -106,7 +104,7 @@ struct block_loader<
     /// Data movement type, coarsened by LeadingDimAlignBytes, capped by the
     /// smaller of either ThreadDpVectors or BlockDpVectorsK
     typedef io_vector<
-            dp_vector_t,
+            float,
             __NV_STD_MIN(ThreadDpVectors, BlockDpVectorsK),
             LeadingDimAlignBytes>
         ldg_vector_t;
@@ -304,7 +302,7 @@ struct block_loader<
     template <int SmemDpVectorsL>
     inline __device__
     void commit(
-        dp_vector_t (&scratch_tile)[BlockDpVectorsK][SmemDpVectorsL])
+        float (&scratch_tile)[BlockDpVectorsK][SmemDpVectorsL])
     {
         static_assert(SmemDpVectorsL >= BlockDpVectorsL, "Row stride must be >= tile width.");
 
