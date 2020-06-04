@@ -4,6 +4,8 @@
 #include <vector>
 #include <chrono>
 #include <immintrin.h>
+#include "timers.h"
+
 using namespace std;
 typedef vector<vector<float>> matrix;
 
@@ -17,6 +19,7 @@ void matmult(matrix &A, matrix &B, matrix &C, int N) {
   float Ac[mc*kc];
   float Bc[kc*nc];
   float Cc[mc*nc];
+  double time = 0;
 #pragma omp parallel for collapse(2) private(Ac,Bc,Cc)
   for (int jc=0; jc<n; jc+=nc) {
     for (int pc=0; pc<k; pc+=kc) {
@@ -38,9 +41,16 @@ void matmult(matrix &A, matrix &B, matrix &C, int N) {
           for (int ir=0; ir<mc; ir+=mr) {
             for (int kr=0; kr<kc; kr++) {
               for (int i=ir; i<ir+mr; i++) {
-                for (int j=jr; j<jr+nr; j++) { 
-                  Cc[i*nc+j] += Ac[i*kc+kr] * Bc[kr*nc+j];
-                }
+		__m256 Avec = _mm256_broadcast_ss(Ac+i*kc+kr);
+                for (int j=jr; j<jr+nr; j+=8) {
+		  double tic = get_time();
+                  __m256 Bvec = _mm256_load_ps(Bc+kr*nc+j);
+                  __m256 Cvec = _mm256_load_ps(Cc+i*nc+j);
+                  Cvec = _mm256_fmadd_ps(Avec, Bvec, Cvec);
+                  _mm256_store_ps(Cc+i*nc+j, Cvec);
+		  double toc = get_time();
+		    time += toc - tic;
+		  }
               }
             }
           }
@@ -53,9 +63,10 @@ void matmult(matrix &A, matrix &B, matrix &C, int N) {
       }
     }
   }
+  printf("N=%d: %lf s (%lf GFlops)\n",N,time,2.*N*N*N/time/1e9);
 }
 
-int main() {
+int main(int argc, char **argv) {
   const int N = 4096;
   matrix A(N,vector<float>(N));
   matrix B(N,vector<float>(N));
@@ -68,9 +79,9 @@ int main() {
       C[i][j] = 0;
     }
   }
-  auto tic = chrono::steady_clock::now();
+  double tic = get_time();
   matmult(A,B,C,N);
-  auto toc = chrono::steady_clock::now();
+  double toc = get_time();
   double time = chrono::duration<double>(toc - tic).count();
   printf("N=%d: %lf s (%lf GFlops)\n",N,time,2.*N*N*N/time/1e9);
 #pragma omp parallel for

@@ -18,8 +18,12 @@ int main(int argc, char** argv) {
   int size, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+<<<<<<< HEAD
   Body ibody[N/size];
   Body_transfer send_body[N/size], recv_body[N/size];
+=======
+  Body ibody[N/size], jbody[N/size], buffer[N/size];
+>>>>>>> f743798ff25f63cf544466b630c34b35525ca76f
   srand48(rank);
   for(int i=0; i<N/size; i++) {
     ibody[i].x = send_body[i].x = drand48();

@@ -13,7 +13,7 @@ void matmult(matrix &A, matrix &B, matrix &C, int N) {
         C[i][j] += A[i][k] * B[k][j];
 }
 
-int main(int argc, char **argv) {
+int main() {
   const int N = 4096;
   matrix A(N,vector<float>(N));
   matrix B(N,vector<float>(N));

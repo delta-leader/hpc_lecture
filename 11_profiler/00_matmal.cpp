@@ -38,8 +38,12 @@ void matmult(matrix &A, matrix &B, matrix &C, int N) {
           for (int ir=0; ir<mc; ir+=mr) {
             for (int kr=0; kr<kc; kr++) {
               for (int i=ir; i<ir+mr; i++) {
-                for (int j=jr; j<jr+nr; j++) { 
-                  Cc[i*nc+j] += Ac[i*kc+kr] * Bc[kr*nc+j];
+		__m256 Avec = _mm256_broadcast_ss(Ac+i*kc+kr);
+                for (int j=jr; j<jr+nr; j+=8) {
+                  __m256 Bvec = _mm256_load_ps(Bc+kr*nc+j);
+                  __m256 Cvec = _mm256_load_ps(Cc+i*nc+j);
+                  Cvec = _mm256_fmadd_ps(Avec, Bvec, Cvec);
+                  _mm256_store_ps(Cc+i*nc+j, Cvec);
                 }
               }
             }
@@ -55,7 +59,7 @@ void matmult(matrix &A, matrix &B, matrix &C, int N) {
   }
 }
 
-int main() {
+int main(int argc, char **argv) {
   const int N = 4096;
   matrix A(N,vector<float>(N));
   matrix B(N,vector<float>(N));

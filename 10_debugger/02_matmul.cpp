@@ -8,7 +8,7 @@ typedef vector<vector<float>> matrix;
 void matmult(matrix &A, matrix &B, matrix &C, int N) {
   for (int i=0; i<N; i++)
     for (int k=0; k<N; k++)
-      for (int j=0; j<N; j++)
+      for (int j=0; j<N; k++)
         C[i][j] += A[i][k] * B[k][j];
 }
 
