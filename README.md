@@ -9,14 +9,13 @@ Included homeworks:
 | SIMD parallelization                 | 04_simd                   |
 | GPU programming                      | 05_cuda                   |
 | Cache blocking                       | 07_cache_gpu              |
+| I/O libraries                        | 09_io                     |
 
 
 Not yet done:
 
 | Topic                                | Sample code               |
 | ------------------------------------ | ------------------------- |
-| High Performance Python              | 08_cython                 |
-| I/O libraries                        | 09_io                     |
 | Parallel debugger                    | 10_debugger               |
 | Parallel profiler                    | 11_profiler               |
 | Containers                           |                           |
