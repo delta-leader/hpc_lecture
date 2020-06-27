@@ -10,14 +10,7 @@ Included homeworks:
 | GPU programming                      | 05_cuda                   |
 | Cache blocking                       | 07_cache_gpu              |
 | I/O libraries                        | 09_io                     |
+| Final report                         | final_report              |
 
 
-Not yet done:
-
-| Topic                                | Sample code               |
-| ------------------------------------ | ------------------------- |
-| Parallel debugger                    | 10_debugger               |
-| Parallel profiler                    | 11_profiler               |
-| Containers                           |                           |
-| Scientific computing                 | 13_fdm,13_solver          |
-| Class 14 | Deep Learning             | 14_dl                     |
+All coursework finished!
